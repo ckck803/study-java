@@ -1,0 +1,31 @@
+plugins {
+    id 'org.springframework.boot' version '2.5.5'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.4'
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/fluent-hc
+    implementation group: 'org.apache.httpcomponents', name: 'fluent-hc', version: '4.3.4'
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents/httpmime
+    implementation group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.3.4'
+
+    compileOnly 'org.projectlombok:lombok'
+
+}
+
+test {
+    useJUnitPlatform()
+}
