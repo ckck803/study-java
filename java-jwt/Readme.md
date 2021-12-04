@@ -1,5 +1,51 @@
 # Java - JWT(Json Web Token) 알아보기
 
+## 기본적인 JWT 만들기
+
+```java
+@Test
+public void create_token(){
+    String token = Jwts.builder()
+            .setSubject("test")
+            .compact();
+
+    Jwt<Header, Claims> headerClaimsJwt = Jwts.parserBuilder()
+            .build()
+            .parseClaimsJwt(token);
+
+    Claims claims = headerClaimsJwt.getBody();
+
+    assertThat(claims.getSubject()).isEqualTo("test");
+}
+```
+
+## JWS 만들기
+
+> JWT 에 signWith 메소드를 이용해 서명 하면 JWS를 만들 수 있다.
+
+```java
+@Test
+public void create_token_jws(){
+    Key key = Keys.hmacShaKeyFor(secrete.getBytes(StandardCharsets.UTF_8));
+
+    String token = Jwts.builder()
+            .setSubject("test")
+            .signWith(key, SignatureAlgorithm.HS512)
+            .compact();
+
+    Jws<Claims> claimsJws = Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token);
+
+    Header header = claimsJws.getHeader();
+    Claims claims = claimsJws.getBody();
+
+    assertThat(header.get("alg")).isEqualTo("HS512"); // Header에 서명 알고리즘이 들어가는 것을 확인할 수 있다.
+    assertThat(claims.getSubject()).isEqualTo("test");
+}
+```
+
 ## JWT Header 조작하기
 
 | 메소드          | 설명                                                                      |
@@ -11,50 +57,38 @@
 ### setHeader
 
 ```java
-public class JwsHeaderMain {
-    public static String key = "amF2YS1hcHBsaWNhdGlvbi1zZWN1cmUtc3R1ZHktand0LXNlY3JldGtleS1pcy1zaG91bGQtYmUtYmlnZ2VyLXRoYW4tNTEyYml0cw==";
-    public static String AUTHENTICATION = "Auth";
-    public static Long tokenValidityInMilliseconds = 100000L;
+@Test
+public void token_header(){
+    Key key =  Keys.hmacShaKeyFor(secrete.getBytes(StandardCharsets.UTF_8));
+    Date date = new Date(System.currentTimeMillis() + 100000L);
 
-    public static void main(String args[]) throws ParseException {
-        Key secretKey = Keys.hmacShaKeyFor(key.getBytes());
-        Date date = new Date(System.currentTimeMillis() + tokenValidityInMilliseconds);
+    Map<String, Object> headers = new HashMap<>();
+    long now = System.currentTimeMillis();
+    headers.put("Date", now);
+    headers.put("type", "JWT");
+    headers.put("name", "test");
 
-        Map<String, Object> header = new HashMap<>();
-        header.put("typ", "JWT");
-        header.put("alg", "HS256");
-        header.put("regDate", System.currentTimeMillis());
+    String token = Jwts.builder()
+            .setHeader(headers)
+            .setExpiration(date)
+            .signWith(key, SignatureAlgorithm.HS512)
+            .compact();
 
+    Jws<Claims> claimsJws = Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token);
 
-        String jwt = Jwts.builder()
-                .setSubject("test")
-                .setHeader(header)
-                .claim(AUTHENTICATION, "jwt")
-                .signWith(secretKey, SignatureAlgorithm.HS512)
-                .setExpiration(date)
-                .compact();
+    Header jwtHeader = claimsJws.getHeader();
+    Claims body = claimsJws.getBody();
 
-        Claims body = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(jwt)
-                .getBody();
-
-        JwsHeader jwsHeader = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(jwt)
-                .getHeader();
-
-        System.out.println("token : " + jwt);
-        System.out.println("JSON : " + body);
-        System.out.println("expiration time : " + body.get("exp", Date.class));
-        System.out.println("jwsHeader = " + jwsHeader);
-        System.out.println(body.get("sub"));
-        System.out.println(body.get("Auth"));
-    }
+    assertThat(jwtHeader.get("Date")).isEqualTo(now);
+    assertThat(jwtHeader.get("type")).isEqualTo("JWT");
+    assertThat(jwtHeader.get("name")).isEqualTo("test");
 }
 ```
+
+### setHeader 특징 
 
 ```java
 public class JwsHeaderMain {
@@ -109,6 +143,8 @@ public class JwsHeaderMain {
     }
 }
 ```
+
+처음에 설정한 `{regDate=1638585812496, typ=JWT, alg=HS512}` Header 정보가 사라지고 `{type2=JWT, regDate2=1638585712002, alg=HS512}` Header 로 대체 됐다.
 
 ```
 token : eyJ0eXBlMiI6IkpXVCIsInJlZ0RhdGUyIjoxNjM4NTg1NzEyMDAyLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0ZXN0IiwiQXV0aCI6Imp3dCIsImV4cCI6MTYzODU4NTgxMX0.RXz5-UlWgYankj6PYC-Lc5la3M__MlffPZbN48O9LW9eH9ZmGs2-S-f7H1GkEm3odhLYBTc7djhQbixsSsNZ_Q
@@ -175,6 +211,9 @@ public class JwsHeaderMain {
     }
 }
 ```
+
+**setHeaderParams** 메서드를 사용하게 되면 처음에 설정한 `{regDate=1638585812496, typ=JWT, alg=HS512}` Header 정보에 `{type2=JWT, regDate2=1638585712002, alg=HS512}` 정보가 추가 됐다.   
+겹치는 Key는 내용을 덮어쓰게 된다.
 
 ```
 token : eyJyZWdEYXRlIjoxNjM4NTg1ODEyNDk2LCJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsInR5cGUyIjoiSldUIiwicmVnRGF0ZTIiOjE2Mzg1ODU4MTI1MDd9.eyJzdWIiOiJ0ZXN0IiwiQXV0aCI6Imp3dCIsImV4cCI6MTYzODU4NTkxMn0.LzGPOldLXKsnF4fO96xZKGgd1hArWsXylDQnmckkcenPxb0dBi5lMwyErvNt37EiLcyWXe2akhKfu8rwdK-AKw

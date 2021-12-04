@@ -1,29 +1,30 @@
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
+# Java 공부
 
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+## HttpClient 사용하기
 
-public class JwsMain {
+
+## JWT 사용하기
+
+
+```java
+public class JwsTimeMain {
     public static String key = "amF2YS1hcHBsaWNhdGlvbi1zZWN1cmUtc3R1ZHktand0LXNlY3JldGtleS1pcy1zaG91bGQtYmUtYmlnZ2VyLXRoYW4tNTEyYml0cw==";
+    public static String AUTHENTICATION = "Auth";
     public static Long tokenValidityInMilliseconds = 100000L;
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws ParseException {
         Key secretKey = Keys.hmacShaKeyFor(key.getBytes());
-        Key secretKey2 = Keys.hmacShaKeyFor((key+"12345").getBytes());
-        Date date = new Date((new Date()).getTime() + tokenValidityInMilliseconds);
+        Date date = new Date(System.currentTimeMillis()+ tokenValidityInMilliseconds);
 
         String jwt = Jwts.builder()
                 .setSubject("test")
-                .signWith(secretKey, SignatureAlgorithm.HS512) // JWT 를 암호화 하기 위한 secret 과 알고리즘을 넣어준다.
+                .claim(AUTHENTICATION, "jwt")
+                .signWith(secretKey, SignatureAlgorithm.HS512)
                 .setExpiration(date)
                 .compact();
 
         Jws<Claims> claimsJws = Jwts.parserBuilder()
-                .setSigningKey(secretKey2)
+                .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(jwt);
 
@@ -33,5 +34,10 @@ public class JwsMain {
         System.out.println("token : " + jwt);
         System.out.println("JWT Header : " + header);
         System.out.println("JWT Claims : " + body);
+        System.out.println("expiration time : " + body.get("exp", Date.class));
+        System.out.println("expiration time : " + body.getExpiration());
+        System.out.println("sub : " + body.get("sub"));
+        System.out.println("Auth : " + body.get("Auth"));
     }
 }
+```
